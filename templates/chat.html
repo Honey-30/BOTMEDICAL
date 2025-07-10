@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Chat - AI Healthcare Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .chat-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+        }
+        .message {
+            margin-bottom: 1rem;
+            animation: fadeInUp 0.3s ease;
+        }
+        .message-user {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .message-bot {
+            display: flex;
+            justify-content: flex-start;
+        }
+        .message-content {
+            max-width: 70%;
+            padding: 1rem 1.5rem;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .message-user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        .message-bot .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 5px;
+        }
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .avatar-user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .avatar-bot {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        .chat-input {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 1rem;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        .input-group {
+            max-width: 100%;
+        }
+        .form-control {
+            border-radius: 25px;
+            border: 2px solid #e9ecef;
+            padding: 12px 20px;
+            font-size: 1rem;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-send {
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+        }
+        .btn-send:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-send:disabled {
+            opacity: 0.6;
+            transform: none;
+        }
+        .typing-indicator {
+            display: none;
+            padding: 1rem 1.5rem;
+            background: white;
+            border-radius: 20px;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 70%;
+        }
+        .typing-dots {
+            display: inline-block;
+        }
+        .typing-dots span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #999;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+        .quick-suggestions {
+            padding: 0.5rem 1rem;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+        }
+        .suggestion-btn {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .suggestion-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .emergency-banner {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            border-radius: 10px;
+            animation: pulse 2s infinite;
+        }
+        .health-score-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #28a745;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .message-timestamp {
+            font-size: 0.8rem;
+            opacity: 0.6;
+            margin-top: 0.5rem;
+        }
+        .message-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .message:hover .message-actions {
+            opacity: 1;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            color: #6c757d;
+            font-size: 0.9rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+        .action-btn:hover {
+            background: #f8f9fa;
+            color: #495057;
+        }
+        .sidebar {
+            background: white;
+            border-right: 1px solid #e9ecef;
+            width: 300px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+        .session-item {
+            padding: 1rem;
+            border-bottom: 1px solid #f8f9fa;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .session-item:hover {
+            background: #f8f9fa;
+        }
+        .session-item.active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-left: 3px solid #667eea;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <div class="sidebar d-none d-md-block">
+            <div class="sidebar-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Chat Sessions</h6>
+                    <button class="btn btn-sm btn-outline-primary" onclick="newChatSession()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="sessionsList">
+                {% for session in chat_sessions %}
+                <div class="session-item {{ 'active' if session.id == current_session_id else '' }}" 
+                     onclick="loadSession('{{ session.id }}')">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">{{ session.title or 'Health Chat' }}</div>
+                            <small class="text-muted">{{ session.created_at.strftime('%B %d, %Y') }}</small>
+                            <div class="mt-1">
+                                <small class="text-muted">{{ session.message_count }} messages</small>
+                            </div>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="renameSession('{{ session.id }}')">Rename</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportSession('{{ session.id }}')">Export</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteSession('{{ session.id }}')">Delete</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="flex-grow-1 chat-container">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-link text-white d-md-none me-3" onclick="toggleSidebar()">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <div>
+                            <h5 class="mb-0">
+                                <i class="fas fa-robot me-2"></i>AI Health Assistant
+                                <span class="health-score-badge" title="Health Score">{{ current_user.health_score or 85 }}</span>
+                            </h5>
+                            <small class="opacity-75">
+                                <i class="fas fa-circle text-success me-1" style="font-size: 0.6rem;"></i>
+                                Online - Ready to help with your health questions
+                            </small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-link text-white" onclick="clearChat()" title="Clear Chat">
+                            <i class="fas fa-broom"></i>
+                        </button>
+                        <button class="btn btn-link text-white" onclick="exportChat()" title="Export Chat">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-link text-white" title="Dashboard">
+                            <i class="fas fa-home"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Banner (conditionally shown) -->
+            <div id="emergencyBanner" class="emergency-banner d-none">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Emergency Detected:</strong> If this is a medical emergency, please call 911 or visit your nearest emergency room immediately.
+                <button class="btn btn-sm btn-light ms-3" onclick="callEmergency()">
+                    <i class="fas fa-phone me-1"></i>Call 911
+                </button>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages">
+                {% for message in messages %}
+                <div class="message message-{{ message.sender }}">
+                    <div class="message-avatar avatar-{{ message.sender }}">
+                        {% if message.sender == 'user' %}
+                        <i class="fas fa-user"></i>
+                        {% else %}
+                        <i class="fas fa-robot"></i>
+                        {% endif %}
+                    </div>
+                    <div class="message-content">
+                        {{ message.content|safe }}
+                        <div class="message-timestamp">
+                            {{ message.created_at.strftime('%I:%M %p') }}
+                        </div>
+                        {% if message.sender == 'bot' %}
+                        <div class="message-actions">
+                            <button class="action-btn" onclick="copyMessage(this)" title="Copy">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button class="action-btn" onclick="likeMessage('{{ message.id }}')" title="Helpful">
+                                <i class="fas fa-thumbs-up"></i>
+                            </button>
+                            <button class="action-btn" onclick="dislikeMessage('{{ message.id }}')" title="Not Helpful">
+                                <i class="fas fa-thumbs-down"></i>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Typing Indicator -->
+                <div class="message message-bot">
+                    <div class="message-avatar avatar-bot">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="typing-indicator" id="typingIndicator">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <span class="ms-2">AI is thinking...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Suggestions -->
+            <div class="quick-suggestions" id="quickSuggestions">
+                <button class="suggestion-btn" onclick="sendSuggestion('I have a headache')">I have a headache</button>
+                <button class="suggestion-btn" onclick="sendSuggestion('Check my symptoms')">Check my symptoms</button>
+                <button class="suggestion-btn" onclick="sendSuggestion('Medication interactions')">Medication interactions</button>
+                <button class="suggestion-btn" onclick="sendSuggestion('Health tips')">Health tips</button>
+                <button class="suggestion-btn" onclick="sendSuggestion('Emergency help')">Emergency help</button>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input">
+                <form id="chatForm" onsubmit="sendMessage(event)">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="messageInput" 
+                               placeholder="Describe your symptoms or ask a health question..." 
+                               autocomplete="off" maxlength="500">
+                        <button type="submit" class="btn btn-send" id="sendButton" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Your health information is private and secure
+                    </small>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="attachFile()" title="Attach File">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="voiceInput()" title="Voice Input">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Input -->
+    <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.doc,.docx" style="display: none;" onchange="handleFileUpload(event)">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentSessionId = '{{ current_session_id or "" }}';
+        let isTyping = false;
+        let recognition;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            
+            messageInput.addEventListener('input', function() {
+                sendButton.disabled = !this.value.trim();
+            });
+
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!sendButton.disabled) {
+                        sendMessage(e);
+                    }
+                }
+            });
+
+            // Auto-focus on input
+            messageInput.focus();
+
+            // Scroll to bottom
+            scrollToBottom();
+
+            // Initialize speech recognition if available
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    messageInput.value = transcript;
+                    sendButton.disabled = false;
+                };
+            }
+        });
+
+        async function sendMessage(event) {
+            event.preventDefault();
+            
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+
+            // Disable input while processing
+            messageInput.disabled = true;
+            document.getElementById('sendButton').disabled = true;
+
+            // Add user message to chat
+            addMessage('user', message);
+            
+            // Clear input
+            messageInput.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: currentSessionId
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Hide typing indicator
+                    hideTypingIndicator();
+                    
+                    // Add bot response
+                    addMessage('bot', data.response);
+                    
+                    // Update session ID if new session
+                    if (data.session_id && !currentSessionId) {
+                        currentSessionId = data.session_id;
+                        updateSessionsList();
+                    }
+
+                    // Show emergency banner if detected
+                    if (data.emergency_detected) {
+                        showEmergencyBanner();
+                    }
+
+                    // Update quick suggestions
+                    if (data.suggestions) {
+                        updateQuickSuggestions(data.suggestions);
+                    }
+                } else {
+                    hideTypingIndicator();
+                    addMessage('bot', 'Sorry, I encountered an error. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                hideTypingIndicator();
+                addMessage('bot', 'Sorry, I\'m having trouble connecting. Please check your internet connection and try again.');
+            } finally {
+                // Re-enable input
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        function addMessage(sender, content) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${sender}`;
+            
+            const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar avatar-${sender}">
+                    <i class="fas fa-${sender === 'user' ? 'user' : 'robot'}"></i>
+                </div>
+                <div class="message-content">
+                    ${content}
+                    <div class="message-timestamp">${timestamp}</div>
+                    ${sender === 'bot' ? `
+                    <div class="message-actions">
+                        <button class="action-btn" onclick="copyMessage(this)" title="Copy">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="action-btn" onclick="likeMessage()" title="Helpful">
+                            <i class="fas fa-thumbs-up"></i>
+                        </button>
+                        <button class="action-btn" onclick="dislikeMessage()" title="Not Helpful">
+                            <i class="fas fa-thumbs-down"></i>
+                        </button>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            // Insert before typing indicator
+            const typingIndicator = document.querySelector('.typing-indicator').parentElement;
+            messagesContainer.insertBefore(messageDiv, typingIndicator);
+            
+            scrollToBottom();
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'block';
+            isTyping = true;
+            scrollToBottom();
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'none';
+            isTyping = false;
+        }
+
+        function scrollToBottom() {
+            const messagesContainer = document.getElementById('chatMessages');
+            setTimeout(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 100);
+        }
+
+        function sendSuggestion(suggestion) {
+            document.getElementById('messageInput').value = suggestion;
+            document.getElementById('sendButton').disabled = false;
+            document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+        }
+
+        function updateQuickSuggestions(suggestions) {
+            const container = document.getElementById('quickSuggestions');
+            container.innerHTML = suggestions.map(s => 
+                `<button class="suggestion-btn" onclick="sendSuggestion('${s}')">${s}</button>`
+            ).join('');
+        }
+
+        function showEmergencyBanner() {
+            document.getElementById('emergencyBanner').classList.remove('d-none');
+        }
+
+        function copyMessage(button) {
+            const messageContent = button.closest('.message-content');
+            const text = messageContent.firstChild.textContent.trim();
+            navigator.clipboard.writeText(text).then(() => {
+                const icon = button.querySelector('i');
+                icon.classList.remove('fa-copy');
+                icon.classList.add('fa-check');
+                setTimeout(() => {
+                    icon.classList.remove('fa-check');
+                    icon.classList.add('fa-copy');
+                }, 2000);
+            });
+        }
+
+        function likeMessage(messageId) {
+            // Send feedback to server
+            fetch('/api/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    message_id: messageId,
+                    feedback: 'positive'
+                })
+            });
+        }
+
+        function dislikeMessage(messageId) {
+            // Send feedback to server
+            fetch('/api/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    message_id: messageId,
+                    feedback: 'negative'
+                })
+            });
+        }
+
+        function callEmergency() {
+            window.location.href = 'tel:911';
+        }
+
+        function voiceInput() {
+            if (recognition) {
+                recognition.start();
+                const button = event.target.closest('button');
+                button.innerHTML = '<i class="fas fa-stop"></i>';
+                
+                recognition.onend = function() {
+                    button.innerHTML = '<i class="fas fa-microphone"></i>';
+                };
+            }
+        }
+
+        function attachFile() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Handle file upload logic
+                console.log('File selected:', file.name);
+                // You can implement file upload to server here
+            }
+        }
+
+        function clearChat() {
+            if (confirm('Are you sure you want to clear this chat?')) {
+                fetch('/api/chat/clear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        session_id: currentSessionId
+                    })
+                }).then(() => {
+                    location.reload();
+                });
+            }
+        }
+
+        function exportChat() {
+            window.open(`/api/chat/export?session_id=${currentSessionId}`, '_blank');
+        }
+
+        function newChatSession() {
+            currentSessionId = '';
+            location.reload();
+        }
+
+        function loadSession(sessionId) {
+            window.location.href = `{{ url_for('main.chat_session') }}?session_id=${sessionId}`;
+        }
+
+        function updateSessionsList() {
+            // Refresh sessions list
+            fetch('/api/chat/sessions')
+                .then(response => response.json())
+                .then(data => {
+                    // Update sessions sidebar
+                    console.log('Sessions updated:', data);
+                });
+        }
+
+        function getCsrfToken() {
+            return document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('d-none');
+        }
+
+        // Auto-save draft
+        let draftTimeout;
+        document.getElementById('messageInput').addEventListener('input', function() {
+            clearTimeout(draftTimeout);
+            draftTimeout = setTimeout(() => {
+                localStorage.setItem('chatDraft', this.value);
+            }, 1000);
+        });
+
+        // Load draft on page load
+        window.addEventListener('load', function() {
+            const draft = localStorage.getItem('chatDraft');
+            if (draft && !currentSessionId) {
+                document.getElementById('messageInput').value = draft;
+                document.getElementById('sendButton').disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - AI Healthcare Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .register-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-register {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .password-strength {
+            height: 4px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            margin-top: 5px;
+        }
+        .strength-weak { background-color: #dc3545; }
+        .strength-medium { background-color: #ffc107; }
+        .strength-strong { background-color: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="register-card p-5">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-user-plus fa-3x text-primary mb-3"></i>
+                        <h2 class="fw-bold">Create Account</h2>
+                        <p class="text-muted">Join our AI Healthcare Community</p>
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" id="registerForm">
+                        {{ csrf_token() }}
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                <i class="fas fa-user me-2"></i>Username
+                            </label>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]+"
+                                   title="Username must be 3-20 characters, letters, numbers, and underscores only">
+                            <div class="invalid-feedback">
+                                Please provide a valid username (3-20 characters, alphanumeric and underscore only).
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope me-2"></i>Email Address
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="invalid-feedback">
+                                Please provide a valid email address.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">
+                                <i class="fas fa-id-card me-2"></i>Full Name
+                            </label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" 
+                                   required maxlength="100">
+                            <div class="invalid-feedback">
+                                Please provide your full name.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-2"></i>Password
+                            </label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       required minlength="8">
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength" id="passwordStrength"></div>
+                            <small class="text-muted">
+                                Password must be at least 8 characters with uppercase, lowercase, number, and special character.
+                            </small>
+                            <div class="invalid-feedback">
+                                Password must meet the requirements above.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">
+                                <i class="fas fa-lock me-2"></i>Confirm Password
+                            </label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            <div class="invalid-feedback">
+                                Passwords do not match.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="age" class="form-label">
+                                <i class="fas fa-calendar me-2"></i>Age
+                            </label>
+                            <input type="number" class="form-control" id="age" name="age" 
+                                   min="13" max="120" required>
+                            <div class="invalid-feedback">
+                                Please provide a valid age (13-120).
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="gender" class="form-label">
+                                <i class="fas fa-venus-mars me-2"></i>Gender
+                            </label>
+                            <select class="form-select" id="gender" name="gender">
+                                <option value="">Select Gender (Optional)</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                                <option value="prefer_not_to_say">Prefer not to say</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> 
+                                    and <a href="#" class="text-decoration-none">Privacy Policy</a>
+                                </label>
+                                <div class="invalid-feedback">
+                                    You must agree to the terms and conditions.
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-register text-white w-100 mb-3">
+                            <i class="fas fa-user-plus me-2"></i>Create Account
+                        </button>
+                    </form>
+
+                    <div class="text-center">
+                        <p class="mb-0">Already have an account? 
+                            <a href="{{ url_for('auth.login') }}" class="text-decoration-none fw-bold">Sign In</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Password visibility toggle
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const password = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (password.type === 'password') {
+                password.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                password.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+
+        // Password strength indicator
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            const strengthBar = document.getElementById('passwordStrength');
+            
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^a-zA-Z0-9]/.test(password)) strength++;
+            
+            strengthBar.style.width = (strength * 20) + '%';
+            
+            if (strength < 3) {
+                strengthBar.className = 'password-strength strength-weak';
+            } else if (strength < 5) {
+                strengthBar.className = 'password-strength strength-medium';
+            } else {
+                strengthBar.className = 'password-strength strength-strong';
+            }
+        });
+
+        // Password confirmation validation
+        document.getElementById('confirm_password').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            
+            if (password !== confirmPassword) {
+                this.setCustomValidity('Passwords do not match');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+
+        // Username availability check (debounced)
+        let usernameTimeout;
+        document.getElementById('username').addEventListener('input', function() {
+            clearTimeout(usernameTimeout);
+            const username = this.value;
+            
+            if (username.length >= 3) {
+                usernameTimeout = setTimeout(() => {
+                    fetch('/auth/check-username', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({username: username})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const input = document.getElementById('username');
+                        if (!data.available) {
+                            input.setCustomValidity('Username is already taken');
+                            input.classList.add('is-invalid');
+                        } else {
+                            input.setCustomValidity('');
+                            input.classList.remove('is-invalid');
+                            input.classList.add('is-valid');
+                        }
+                    });
+                }, 500);
+            }
+        });
+
+        // Email availability check (debounced)
+        let emailTimeout;
+        document.getElementById('email').addEventListener('input', function() {
+            clearTimeout(emailTimeout);
+            const email = this.value;
+            
+            if (email.includes('@')) {
+                emailTimeout = setTimeout(() => {
+                    fetch('/auth/check-email', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({email: email})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const input = document.getElementById('email');
+                        if (!data.available) {
+                            input.setCustomValidity('Email is already registered');
+                            input.classList.add('is-invalid');
+                        } else {
+                            input.setCustomValidity('');
+                            input.classList.remove('is-invalid');
+                            input.classList.add('is-valid');
+                        }
+                    });
+                }, 500);
+            }
+        });
+
+        // Form validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+</body>
+</html>

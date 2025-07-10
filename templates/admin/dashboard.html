@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - AI Healthcare Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@4.0.0/dist/chart.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease;
+            overflow: hidden;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card .card-body {
+            padding: 2rem;
+        }
+        .stat-icon {
+            font-size: 3rem;
+            opacity: 0.8;
+        }
+        .chart-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+        }
+        .table-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+        }
+        .action-btn {
+            border: none;
+            background: none;
+            color: #6c757d;
+            font-size: 1.1rem;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        .action-btn:hover {
+            background: #f8f9fa;
+            color: #495057;
+        }
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        .metric-item {
+            padding: 1rem;
+            border-left: 4px solid #dc3545;
+            background: white;
+            border-radius: 0 10px 10px 0;
+            margin-bottom: 1rem;
+        }
+        .alert-item {
+            border-left: 4px solid #ffc107;
+            background: #fff3cd;
+            padding: 1rem;
+            border-radius: 0 10px 10px 0;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Header -->
+    <div class="admin-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="mb-0">
+                        <i class="fas fa-shield-alt me-3"></i>Admin Dashboard
+                    </h1>
+                    <p class="mb-0 opacity-75">System Overview and Management</p>
+                </div>
+                <div class="col-auto">
+                    <div class="dropdown">
+                        <button class="btn btn-light dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-2"></i>{{ current_user.username }}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('main.dashboard') }}"><i class="fas fa-home me-2"></i>User Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card stat-card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-users stat-icon mb-3"></i>
+                        <h2 class="mb-2">{{ stats.total_users or 0 }}</h2>
+                        <p class="mb-0">Total Users</p>
+                        <small class="opacity-75">
+                            <i class="fas fa-arrow-up me-1"></i>+{{ stats.new_users_today or 0 }} today
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stat-card bg-success text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-comments stat-icon mb-3"></i>
+                        <h2 class="mb-2">{{ stats.total_sessions or 0 }}</h2>
+                        <p class="mb-0">Chat Sessions</p>
+                        <small class="opacity-75">
+                            <i class="fas fa-arrow-up me-1"></i>+{{ stats.sessions_today or 0 }} today
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stat-card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-exclamation-triangle stat-icon mb-3"></i>
+                        <h2 class="mb-2">{{ stats.emergency_alerts or 0 }}</h2>
+                        <p class="mb-0">Emergency Alerts</p>
+                        <small class="opacity-75">
+                            <i class="fas fa-clock me-1"></i>Last: {{ stats.last_emergency or 'Never' }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stat-card bg-info text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-server stat-icon mb-3"></i>
+                        <h2 class="mb-2">{{ stats.system_health or 100 }}%</h2>
+                        <p class="mb-0">System Health</p>
+                        <small class="opacity-75">
+                            <i class="fas fa-check me-1"></i>All systems operational
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-pills mb-4" id="adminTabs">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#overview">
+                    <i class="fas fa-tachometer-alt me-2"></i>Overview
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#users">
+                    <i class="fas fa-users me-2"></i>Users
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#sessions">
+                    <i class="fas fa-comments me-2"></i>Sessions
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#reports">
+                    <i class="fas fa-file-medical me-2"></i>Reports
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#system">
+                    <i class="fas fa-cog me-2"></i>System
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Overview Tab -->
+            <div class="tab-pane fade show active" id="overview">
+                <div class="row">
+                    <!-- Charts -->
+                    <div class="col-lg-8 mb-4">
+                        <div class="chart-card">
+                            <h5 class="mb-3"><i class="fas fa-chart-line me-2"></i>Usage Analytics</h5>
+                            <canvas id="usageChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- System Metrics -->
+                    <div class="col-lg-4 mb-4">
+                        <h5 class="mb-3"><i class="fas fa-server me-2"></i>System Metrics</h5>
+                        <div class="metric-item">
+                            <div class="d-flex justify-content-between">
+                                <span>CPU Usage</span>
+                                <strong>{{ system_metrics.cpu_usage or 45 }}%</strong>
+                            </div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar" style="width: {{ system_metrics.cpu_usage or 45 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="d-flex justify-content-between">
+                                <span>Memory Usage</span>
+                                <strong>{{ system_metrics.memory_usage or 62 }}%</strong>
+                            </div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar bg-success" style="width: {{ system_metrics.memory_usage or 62 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="d-flex justify-content-between">
+                                <span>Database Size</span>
+                                <strong>{{ system_metrics.db_size or '2.4 GB' }}</strong>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="d-flex justify-content-between">
+                                <span>API Response Time</span>
+                                <strong>{{ system_metrics.api_response_time or '120ms' }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity & Alerts -->
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <h5 class="mb-3"><i class="fas fa-clock me-2"></i>Recent Activity</h5>
+                        <div class="table-card">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Action</th>
+                                            <th>Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for activity in recent_activity %}
+                                        <tr>
+                                            <td>{{ activity.user }}</td>
+                                            <td>{{ activity.action }}</td>
+                                            <td>{{ activity.time_ago }}</td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">No recent activity</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 mb-4">
+                        <h5 class="mb-3"><i class="fas fa-exclamation-triangle me-2"></i>System Alerts</h5>
+                        {% for alert in system_alerts %}
+                        <div class="alert-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ alert.title }}</strong>
+                                    <p class="mb-1">{{ alert.message }}</p>
+                                    <small class="text-muted">{{ alert.time_ago }}</small>
+                                </div>
+                                <button class="action-btn" onclick="dismissAlert('{{ alert.id }}')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-check-circle fa-3x mb-3 opacity-50"></i>
+                            <p>No system alerts</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div class="tab-pane fade" id="users">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4>User Management</h4>
+                    <div>
+                        <button class="btn btn-outline-primary me-2" onclick="exportUsers()">
+                            <i class="fas fa-download me-2"></i>Export
+                        </button>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="fas fa-plus me-2"></i>Add User
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-card">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Sessions</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="https://via.placeholder.com/32" class="rounded-circle me-2" alt="Avatar">
+                                            <div>
+                                                <div class="fw-semibold">{{ user.full_name or user.username }}</div>
+                                                <small class="text-muted">@{{ user.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge status-badge bg-{{ 'success' if user.is_active else 'danger' }}">
+                                            {{ 'Active' if user.is_active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ user.session_count or 0 }}</td>
+                                    <td>
+                                        <button class="action-btn" onclick="viewUser('{{ user.id }}')" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-btn" onclick="editUser('{{ user.id }}')" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="action-btn text-danger" onclick="deleteUser('{{ user.id }}')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sessions Tab -->
+            <div class="tab-pane fade" id="sessions">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4>Chat Sessions</h4>
+                    <div>
+                        <button class="btn btn-outline-primary me-2" onclick="exportSessions()">
+                            <i class="fas fa-download me-2"></i>Export
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="cleanupSessions()">
+                            <i class="fas fa-broom me-2"></i>Cleanup Old
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-card">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Session ID</th>
+                                    <th>User</th>
+                                    <th>Messages</th>
+                                    <th>Started</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in chat_sessions %}
+                                <tr>
+                                    <td><code>{{ session.id[:8] }}...</code></td>
+                                    <td>{{ session.user.username }}</td>
+                                    <td>{{ session.message_count }}</td>
+                                    <td>{{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ session.duration or 'Active' }}</td>
+                                    <td>
+                                        <span class="badge status-badge bg-{{ 'success' if session.is_active else 'secondary' }}">
+                                            {{ 'Active' if session.is_active else 'Ended' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="action-btn" onclick="viewSession('{{ session.id }}')" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-btn" onclick="exportSession('{{ session.id }}')" title="Export">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="action-btn text-danger" onclick="deleteSession('{{ session.id }}')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div class="tab-pane fade" id="reports">
+                <h4 class="mb-4">Health Reports</h4>
+                <div class="table-card">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Report ID</th>
+                                    <th>User</th>
+                                    <th>Type</th>
+                                    <th>Health Score</th>
+                                    <th>Generated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in health_reports %}
+                                <tr>
+                                    <td><code>{{ report.id[:8] }}...</code></td>
+                                    <td>{{ report.user.username }}</td>
+                                    <td>{{ report.report_type.title() }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if report.health_score > 80 else 'warning' if report.health_score > 60 else 'danger' }}">
+                                            {{ report.health_score }}%
+                                        </span>
+                                    </td>
+                                    <td>{{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <button class="action-btn" onclick="viewReport('{{ report.id }}')" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-btn" onclick="downloadReport('{{ report.id }}')" title="Download">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Tab -->
+            <div class="tab-pane fade" id="system">
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="chart-card">
+                            <h5 class="mb-3"><i class="fas fa-database me-2"></i>Database Management</h5>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary" onclick="backupDatabase()">
+                                    <i class="fas fa-download me-2"></i>Backup Database
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="optimizeDatabase()">
+                                    <i class="fas fa-magic me-2"></i>Optimize Database
+                                </button>
+                                <button class="btn btn-outline-info" onclick="clearCache()">
+                                    <i class="fas fa-broom me-2"></i>Clear Cache
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="maintenanceMode()">
+                                    <i class="fas fa-tools me-2"></i>Maintenance Mode
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 mb-4">
+                        <div class="chart-card">
+                            <h5 class="mb-3"><i class="fas fa-cog me-2"></i>System Configuration</h5>
+                            <form id="systemConfigForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Max Sessions per User</label>
+                                    <input type="number" class="form-control" value="{{ config.MAX_SESSIONS_PER_USER or 10 }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Emergency Alert Threshold</label>
+                                    <input type="number" class="form-control" value="{{ config.EMERGENCY_THRESHOLD or 85 }}" min="0" max="100">
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="maintenanceMode" {{ 'checked' if config.MAINTENANCE_MODE else '' }}>
+                                        <label class="form-check-label" for="maintenanceMode">
+                                            Maintenance Mode
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="registrationEnabled" {{ 'checked' if config.REGISTRATION_ENABLED else '' }}>
+                                        <label class="form-check-label" for="registrationEnabled">
+                                            Allow New Registrations
+                                        </label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Configuration
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Logs -->
+                <div class="chart-card">
+                    <h5 class="mb-3"><i class="fas fa-file-alt me-2"></i>System Logs</h5>
+                    <div class="log-viewer" style="height: 300px; overflow-y: auto; background: #f8f9fa; padding: 1rem; border-radius: 5px; font-family: monospace;">
+                        {% for log in system_logs %}
+                        <div class="log-entry">
+                            <span class="text-muted">{{ log.timestamp }}</span>
+                            <span class="badge bg-{{ log.level_color }}">{{ log.level }}</span>
+                            {{ log.message }}
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted">
+                            No recent logs available
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Usage Analytics Chart
+        const ctx = document.getElementById('usageChart').getContext('2d');
+        const usageChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                datasets: [
+                    {
+                        label: 'Chat Sessions',
+                        data: [12, 19, 3, 5, 2, 3, 9],
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'New Users',
+                        data: [2, 3, 1, 2, 1, 1, 2],
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Admin Functions
+        function viewUser(userId) {
+            window.location.href = `/admin/users/${userId}`;
+        }
+
+        function editUser(userId) {
+            // Implement edit user modal
+            console.log('Edit user:', userId);
+        }
+
+        function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                fetch(`/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken()
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    }
+                });
+            }
+        }
+
+        function viewSession(sessionId) {
+            window.location.href = `/admin/sessions/${sessionId}`;
+        }
+
+        function exportSession(sessionId) {
+            window.open(`/admin/sessions/${sessionId}/export`, '_blank');
+        }
+
+        function deleteSession(sessionId) {
+            if (confirm('Are you sure you want to delete this session?')) {
+                fetch(`/admin/sessions/${sessionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken()
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    }
+                });
+            }
+        }
+
+        function exportUsers() {
+            window.open('/admin/users/export', '_blank');
+        }
+
+        function exportSessions() {
+            window.open('/admin/sessions/export', '_blank');
+        }
+
+        function cleanupSessions() {
+            if (confirm('This will delete old inactive sessions. Continue?')) {
+                fetch('/admin/sessions/cleanup', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken()
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    }
+                });
+            }
+        }
+
+        function backupDatabase() {
+            fetch('/admin/system/backup', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                }
+            }).then(response => {
+                if (response.ok) {
+                    alert('Database backup initiated');
+                }
+            });
+        }
+
+        function optimizeDatabase() {
+            fetch('/admin/system/optimize', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                }
+            }).then(response => {
+                if (response.ok) {
+                    alert('Database optimization completed');
+                }
+            });
+        }
+
+        function clearCache() {
+            fetch('/admin/system/clear-cache', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                }
+            }).then(response => {
+                if (response.ok) {
+                    alert('Cache cleared successfully');
+                }
+            });
+        }
+
+        function maintenanceMode() {
+            const enabled = confirm('Enable maintenance mode? This will disable access for regular users.');
+            fetch('/admin/system/maintenance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({enabled: enabled})
+            }).then(response => {
+                if (response.ok) {
+                    alert(`Maintenance mode ${enabled ? 'enabled' : 'disabled'}`);
+                }
+            });
+        }
+
+        function dismissAlert(alertId) {
+            fetch(`/admin/alerts/${alertId}/dismiss`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        }
+
+        function getCsrfToken() {
+            return document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
+        }
+
+        // System config form
+        document.getElementById('systemConfigForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('/admin/system/config', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    alert('Configuration saved successfully');
+                }
+            });
+        });
+
+        // Auto-refresh dashboard data
+        setInterval(() => {
+            fetch('/admin/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    // Update statistics
+                    console.log('Admin stats updated:', data);
+                })
+                .catch(error => console.error('Error updating admin dashboard:', error));
+        }, 60000); // 1 minute
+    </script>
+</body>
+</html>
