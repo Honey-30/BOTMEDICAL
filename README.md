@@ -546,6 +546,3 @@ For enterprise deployments and commercial support, please contact us at enterpri
 **Disclaimer**: This chatbot is for informational purposes only and should not replace professional medical advice. Always consult with qualified healthcare providers for medical decisions.
 
 Made with ❤️ by the AI Healthcare Team
-=======
-# medibot
->>>>>>> df93625c6909c9451a951e5ecd870af0bb2b50d7
