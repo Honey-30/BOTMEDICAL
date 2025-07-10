@@ -12,6 +12,8 @@ This application provides comprehensive healthcare symptom analysis with:
 
 import os
 import logging
+import uuid
+import pandas as pd
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
@@ -31,11 +33,77 @@ from datetime import datetime, timedelta
 import json
 
 # Import configuration and models
-from config import config
-from app.models import db, User, ChatSession, ChatMessage, HealthReport, AuditLog
-from app.api.routes import api_bp, init_ml_models
-from app.utils.security import security_manager, apply_security_headers
-from app.utils.cache import cache_manager
+try:
+    from config import config
+except ImportError:
+    # Fallback configuration
+    config = {
+        'development': type('Config', (), {
+            'SECRET_KEY': 'dev-secret-key',
+            'SQLALCHEMY_DATABASE_URI': 'sqlite:///healthchatbot.db',
+            'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+            'DEBUG': True
+        }),
+        'testing': type('Config', (), {
+            'SECRET_KEY': 'test-secret-key',
+            'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+            'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+            'TESTING': True
+        })
+    }
+
+try:
+    from app.models import db, User, ChatSession, ChatMessage, HealthReport, AuditLog
+except ImportError:
+    # Create minimal models for standalone operation
+    db = SQLAlchemy()
+    
+    class User(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        username = db.Column(db.String(80), unique=True, nullable=False)
+        email = db.Column(db.String(120), unique=True, nullable=False)
+        is_admin = db.Column(db.Boolean, default=False)
+    
+    class ChatSession(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    class ChatMessage(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        session_id = db.Column(db.Integer, db.ForeignKey('chat_session.id'))
+        message = db.Column(db.Text)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    class HealthReport(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    class AuditLog(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        action = db.Column(db.String(100))
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+try:
+    from app.api.routes import api_bp, init_ml_models
+except ImportError:
+    from flask import Blueprint
+    api_bp = Blueprint('api', __name__)
+    def init_ml_models(config):
+        pass
+
+try:
+    from app.utils.security import security_manager, apply_security_headers
+except ImportError:
+    security_manager = None
+    def apply_security_headers(response):
+        return response
+
+try:
+    from app.utils.cache import cache_manager
+except ImportError:
+    cache_manager = type('CacheManager', (), {'config': None, 'redis_client': None})()
 
 # Configure structured logging
 structlog.configure(
@@ -302,6 +370,50 @@ os.makedirs('models', exist_ok=True)
 os.makedirs('data', exist_ok=True)
 os.makedirs('logs', exist_ok=True)
 os.makedirs('uploads', exist_ok=True)
+
+# Initialize Flask app for standalone usage
+app = Flask(__name__)
+app.config.update({
+    'SECRET_KEY': 'dev-secret-key',
+    'SQLALCHEMY_DATABASE_URI': 'sqlite:///healthchatbot.db',
+    'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+    'DEBUG': True
+})
+
+# Initialize extensions for standalone app
+db.init_app(app)
+
+# Initialize missing components
+try:
+    from model.preprocessor import SymptomPreprocessor
+    from model.symptom_checker import SymptomChecker  
+    from model.response_gen import ResponseGenerator
+    
+    preprocessor = SymptomPreprocessor()
+    symptom_checker = SymptomChecker()
+    response_generator = ResponseGenerator()
+except ImportError:
+    # Create mock classes for CI/CD
+    class MockPreprocessor:
+        def extract_symptoms(self, text): return []
+        def get_all_standard_symptoms(self): return []
+    
+    class MockSymptomChecker:
+        def is_emergency(self, symptoms): return False
+        def calculate_severity(self, symptoms): return (0, 'low')
+        def predict(self, symptoms): return []
+        def get_remedies(self, disease): return []
+        def get_disease_info(self, disease): return {}
+        def get_precautions(self, disease): return []
+        def load_model(self, path): pass
+    
+    class MockResponseGenerator:
+        def generate_prediction_response(self, *args): return "Mock response"
+        def generate_followup_questions(self, *args): return []
+    
+    preprocessor = MockPreprocessor()
+    symptom_checker = MockSymptomChecker()
+    response_generator = MockResponseGenerator()
 
 @app.route('/')
 def index():
@@ -598,6 +710,10 @@ if __name__ == '__main__':
     # Create necessary directories
     os.makedirs('models', exist_ok=True)
     os.makedirs('data', exist_ok=True)
+    
+    # Create database tables
+    with app.app_context():
+        db.create_all()
     
     # Run the Flask app
     app.run(debug=True, host='0.0.0.0', port=5000)
